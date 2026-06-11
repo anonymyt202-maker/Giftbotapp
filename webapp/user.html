@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GiftBot Shop</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg:#0f1117;--bg2:#1a1d27;--bg3:#22263a;--accent:#6c63ff;--accent2:#a78bfa;--green:#22c55e;--red:#ef4444;--text:#e2e8f0;--text2:#94a3b8;--border:#2d3148;--radius:14px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;padding-bottom:80px}
+.header{background:var(--bg2);padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
+.header h1{font-size:17px;font-weight:700}
+.balance-bar{display:flex;gap:8px;margin-left:auto}
+.bal-chip{background:var(--bg3);border-radius:20px;padding:5px 10px;font-size:12px;font-weight:600}
+.search-row{padding:12px 14px;display:flex;gap:8px}
+.input{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;outline:none;width:100%}
+.input:focus{border-color:var(--accent)}
+.cats{display:flex;gap:6px;padding:0 14px 10px;overflow-x:auto;scrollbar-width:none}
+.cats::-webkit-scrollbar{display:none}
+.cat{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;border:none;background:var(--bg3);color:var(--text2);transition:all .2s}
+.cat.active{background:var(--accent);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:0 14px}
+@media(min-width:500px){.grid{grid-template-columns:repeat(3,1fr)}}
+.gift-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:transform .15s,border-color .15s}
+.gift-card:hover{transform:translateY(-2px);border-color:var(--accent)}
+.gift-img{width:100%;aspect-ratio:1;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:48px}
+.gift-img img{width:100%;height:100%;object-fit:cover}
+.gift-info{padding:10px}
+.gift-name{font-weight:600;font-size:13px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gift-price{color:var(--accent2);font-size:12px;font-weight:700}
+/* Detail page */
+.page{display:none}
+.page.active{display:block}
+.detail-header{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)}
+.back-btn{background:none;border:none;color:var(--text);font-size:20px;cursor:pointer;padding:4px}
+.detail-preview{background:var(--bg3);width:100%;aspect-ratio:1;max-height:260px;display:flex;align-items:center;justify-content:center;font-size:80px}
+.detail-preview img{width:100%;height:100%;object-fit:contain}
+.detail-body{padding:16px}
+.detail-name{font-size:20px;font-weight:700;margin-bottom:6px}
+.detail-price{color:var(--accent2);font-size:18px;font-weight:700;margin-bottom:8px}
+.detail-desc{color:var(--text2);font-size:13px;line-height:1.6;margin-bottom:14px}
+.detail-id{font-size:11px;color:var(--text2);margin-bottom:16px}
+.big-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:15px;font-weight:700;border:none;border-radius:12px;cursor:pointer;transition:opacity .2s}
+.big-btn:hover{opacity:.9}
+.big-btn:disabled{opacity:.5;cursor:not-allowed}
+/* Checkout */
+.section{margin-bottom:14px}
+.section-title{font-size:12px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.radio-group{display:flex;flex-direction:column;gap:6px}
+.radio-opt{display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;transition:border-color .2s}
+.radio-opt.selected{border-color:var(--accent)}
+.radio-opt input{accent-color:var(--accent)}
+.opt-label{flex:1}
+.opt-name{font-weight:600;font-size:13px}
+.opt-sub{font-size:11px;color:var(--text2)}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg3);border-radius:10px;margin-bottom:8px}
+.toggle{width:44px;height:24px;background:var(--border);border-radius:12px;position:relative;cursor:pointer;transition:background .2s}
+.toggle.on{background:var(--accent)}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:left .2s}
+.toggle.on::after{left:23px}
+.summary-card{background:var(--bg3);border-radius:12px;padding:14px;margin-bottom:14px}
+.summary-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px}
+.summary-row:last-child{margin-bottom:0;font-weight:700;font-size:14px;color:var(--accent2)}
+.promo-row{display:flex;gap:8px;margin-top:8px}
+.badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-green{background:rgba(34,197,94,.15);color:var(--green)}
+.badge-red{background:rgba(239,68,68,.15);color:var(--red)}
+.empty{text-align:center;padding:40px 20px;color:var(--text2)}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--border);padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;animation:fadeIn .2s}
+@keyframes fadeIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}}
+.orders-list{padding:0 14px}
+.order-item{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px}
+.order-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.success-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;text-align:center}
+.success-icon{font-size:60px;margin-bottom:16px}
+</style>
+</head>
+<body>
+<div id="page-catalog" class="page active">
+  <div class="header">
+    <span style="font-size:20px">🎁</span>
+    <h1>Gift Shop</h1>
+    <div class="balance-bar">
+      <span class="bal-chip" id="balStars">⭐ 0</span>
+      <span class="bal-chip" id="balUzs">💵 0</span>
+    </div>
+  </div>
+  <div class="search-row">
+    <input class="input" id="searchInput" placeholder="🔍 Gift qidirish..." oninput="filterGifts()">
+  </div>
+  <div class="cats" id="catList"></div>
+  <div class="grid" id="giftGrid"><div style="grid-column:span 2" class="empty">Yuklanmoqda...</div></div>
+</div>
+
+<div id="page-detail" class="page">
+  <div class="detail-header">
+    <button class="back-btn" onclick="goBack('catalog')">←</button>
+    <span style="font-weight:600" id="detailTitle"></span>
+  </div>
+  <div class="detail-preview" id="detailPreview"></div>
+  <div class="detail-body">
+    <div class="detail-name" id="detailName"></div>
+    <div class="detail-price" id="detailPrice"></div>
+    <div class="detail-desc" id="detailDesc"></div>
+    <div class="detail-id" id="detailId"></div>
+    <button class="big-btn" onclick="goCheckout()">🛒 Sotib olish</button>
+  </div>
+</div>
+
+<div id="page-checkout" class="page">
+  <div class="detail-header">
+    <button class="back-btn" onclick="goBack('detail')">←</button>
+    <span style="font-weight:600">Checkout</span>
+  </div>
+  <div style="padding:16px">
+    <div class="summary-card">
+      <div class="summary-row"><span>🎁 Gift</span><span id="ckGiftName">—</span></div>
+      <div class="summary-row"><span>💰 Narx</span><span id="ckGiftPrice">—</span></div>
+      <div id="ckDiscountRow" style="display:none" class="summary-row"><span>🎟 Chegirma</span><span id="ckDiscount" style="color:var(--green)">—</span></div>
+      <div class="summary-row"><span>💳 Jami</span><span id="ckTotal">—</span></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">To'lov turi</div>
+      <div class="radio-group" id="paymentOptions"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Gift kimga?</div>
+      <div class="radio-group">
+        <label class="radio-opt selected" id="opt-self" onclick="selectTarget('self')">
+          <input type="radio" name="target" value="self" checked>
+          <div class="opt-label"><div class="opt-name">👤 O'zimga</div><div class="opt-sub">Siz olasiz</div></div>
+        </label>
+        <label class="radio-opt" id="opt-friend" onclick="selectTarget('friend')">
+          <input type="radio" name="target" value="friend">
+          <div class="opt-label"><div class="opt-name">👫 Do'stga</div><div class="opt-sub">Username yoki ID bilan</div></div>
+        </label>
+      </div>
+      <div id="friendInput" style="display:none;margin-top:10px">
+        <input class="input" id="friendUsername" placeholder="@username yoki Telegram ID">
+      </div>
+    </div>
+
+    <div class="toggle-row">
+      <div><div style="font-weight:600;font-size:13px">🕵️ Anonim</div><div style="font-size:11px;color:var(--text2)">Kim ekanligingiz yashiriladi</div></div>
+      <div class="toggle" id="anonToggle" onclick="toggleAnon()"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">💬 Izoh (ixtiyoriy)</div>
+      <textarea class="input" id="commentInput" rows="2" placeholder="Tabriklash xabaringiz..."></textarea>
+    </div>
+
+    <div class="section">
+      <div class="section-title">🎟 Promo kod</div>
+      <div class="promo-row">
+        <input class="input" id="promoInput" placeholder="PROMO20" style="text-transform:uppercase">
+        <button style="padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer;font-size:13px" onclick="applyPromo()">Qo'llash</button>
+      </div>
+      <div id="promoMsg" style="margin-top:6px;font-size:12px"></div>
+    </div>
+
+    <button class="big-btn" id="buyBtn" onclick="confirmPurchase()">✅ Tasdiqlash</button>
+  </div>
+</div>
+
+<div id="page-success" class="page">
+  <div class="success-screen">
+    <div class="success-icon">🎉</div>
+    <h2 style="font-size:20px;margin-bottom:8px">Muvaffaqiyatli!</h2>
+    <p style="color:var(--text2);margin-bottom:24px" id="successMsg">Gift muvaffaqiyatli yuborildi!</p>
+    <button class="big-btn" style="max-width:200px" onclick="goBack('catalog')">🎁 Davom etish</button>
+  </div>
+</div>
+
+<div id="page-orders" class="page">
+  <div class="detail-header">
+    <button class="back-btn" onclick="goBack('catalog')">←</button>
+    <span style="font-weight:600">📦 Xaridlarim</span>
+  </div>
+  <div class="orders-list" id="ordersList"><div class="empty">Yuklanmoqda...</div></div>
+</div>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
+
+const INIT_DATA = tg.initData;
+const API = '';
+const H = () => ({ 'X-Init-Data': INIT_DATA });
+
+let allGifts = [], selectedGift = null, selectedCat = 'Barchasi';
+let payWith = 'stars', targetMode = 'self', anonOn = false;
+let userBalance = { stars: 0, uzs: 0 };
+
+function showToast(msg, dur=2500){
+  const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
+  document.body.appendChild(t); setTimeout(()=>t.remove(),dur);
+}
+function fmt(n){return Number(n||0).toLocaleString('uz-UZ')}
+
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  if(name==='catalog'){tg.BackButton.hide();}
+  else{tg.BackButton.show();}
+}
+function goBack(to){showPage(to);}
+tg.BackButton.onClick(()=>{
+  const active = document.querySelector('.page.active')?.id?.replace('page-','');
+  if(active==='detail') goBack('catalog');
+  else if(active==='checkout') goBack('detail');
+  else if(active==='orders') goBack('catalog');
+  else tg.close();
+});
+
+// ── User balance ──────────────────────────────────────────────────
+async function loadMe(){
+  const r = await fetch(API+'/api/users/me',{headers:H()});
+  const d = await r.json();
+  if(!d.detail){
+    userBalance = { stars: d.stars, uzs: d.uzs };
+    document.getElementById('balStars').textContent = `⭐ ${fmt(d.stars)}`;
+    document.getElementById('balUzs').textContent = `💵 ${fmt(d.uzs)}`;
+  }
+}
+
+// ── Gifts ─────────────────────────────────────────────────────────
+async function loadGifts(){
+  const r = await fetch(API+'/api/gifts',{headers:H()});
+  allGifts = await r.json();
+  loadCategories();
+  renderGifts(allGifts);
+}
+function loadCategories(){
+  const cats = ['Barchasi', ...new Set(allGifts.map(g=>g.category).filter(Boolean))];
+  document.getElementById('catList').innerHTML = cats.map(c=>
+    `<button class="cat ${c===selectedCat?'active':''}" onclick="selectCat('${c}')">${c}</button>`
+  ).join('');
+}
+function selectCat(cat){
+  selectedCat = cat;
+  loadCategories();
+  filterGifts();
+}
+function filterGifts(){
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  let list = selectedCat==='Barchasi' ? allGifts : allGifts.filter(g=>g.category===selectedCat);
+  if(q) list = list.filter(g=>g.name.toLowerCase().includes(q));
+  renderGifts(list);
+}
+function renderGifts(gifts){
+  if(!gifts.length){document.getElementById('giftGrid').innerHTML='<div style="grid-column:span 2" class="empty">Gift topilmadi</div>';return;}
+  document.getElementById('giftGrid').innerHTML = gifts.map(g=>`
+    <div class="gift-card" onclick="openDetail(${g.id})">
+      <div class="gift-img">
+        ${g.image_url||g.file_path ? `<img src="${g.image_url||g.file_path}" alt="${g.name}" onerror="this.parentElement.innerHTML='🎁'">` : '🎁'}
+      </div>
+      <div class="gift-info">
+        <div class="gift-name">${g.name}</div>
+        <div class="gift-price">⭐ ${g.price_stars}</div>
+      </div>
+    </div>`).join('');
+}
+
+function openDetail(id){
+  selectedGift = allGifts.find(g=>g.id===id);
+  if(!selectedGift) return;
+  document.getElementById('detailTitle').textContent = selectedGift.name;
+  const prev = document.getElementById('detailPreview');
+  if(selectedGift.image_url||selectedGift.file_path){
+    prev.innerHTML = `<img src="${selectedGift.image_url||selectedGift.file_path}" alt="${selectedGift.name}">`;
+  } else {
+    prev.innerHTML = '🎁';
+    prev.style.fontSize='80px';
+  }
+  document.getElementById('detailName').textContent = selectedGift.name;
+  document.getElementById('detailPrice').textContent = `⭐ ${selectedGift.price_stars}  (${fmt(selectedGift.price_uzs)} UZS)`;
+  document.getElementById('detailDesc').textContent = selectedGift.description || '';
+  document.getElementById('detailId').textContent = `Gift ID: ${selectedGift.tg_gift_id}`;
+  showPage('detail');
+}
+
+function goCheckout(){
+  if(!selectedGift) return;
+  document.getElementById('ckGiftName').textContent = selectedGift.name;
+  document.getElementById('ckGiftPrice').textContent = `⭐ ${selectedGift.price_stars}`;
+  document.getElementById('ckTotal').textContent = `⭐ ${selectedGift.price_stars}`;
+  // Payment options
+  const hasStars = userBalance.stars >= selectedGift.price_stars;
+  const hasUzs = userBalance.uzs >= selectedGift.price_uzs;
+  document.getElementById('paymentOptions').innerHTML = `
+    <label class="radio-opt ${hasStars?'selected':''}" id="pay-stars" onclick="selectPay('stars')">
+      <input type="radio" name="pay" value="stars" ${hasStars?'checked':''} ${!hasStars?'disabled':''}>
+      <div class="opt-label">
+        <div class="opt-name">⭐ Stars bilan (${selectedGift.price_stars} ⭐)</div>
+        <div class="opt-sub">Balansda: ${fmt(userBalance.stars)} ⭐ ${!hasStars?'❌ Yetarli emas':''}</div>
+      </div>
+    </label>
+    <label class="radio-opt" id="pay-uzs" onclick="selectPay('uzs')">
+      <input type="radio" name="pay" value="uzs" ${!hasStars?'checked':''}>
+      <div class="opt-label">
+        <div class="opt-name">💵 UZS bilan (${fmt(selectedGift.price_uzs)} UZS)</div>
+        <div class="opt-sub">Balansda: ${fmt(userBalance.uzs)} UZS ${!hasUzs?'❌ Yetarli emas':''}</div>
+      </div>
+    </label>`;
+  payWith = hasStars ? 'stars' : 'uzs';
+  document.getElementById('anonToggle').classList.remove('on');
+  anonOn = false;
+  document.getElementById('commentInput').value = '';
+  document.getElementById('promoInput').value = '';
+  document.getElementById('promoMsg').textContent = '';
+  document.getElementById('ckDiscountRow').style.display = 'none';
+  showPage('checkout');
+}
+
+function selectPay(type){
+  payWith = type;
+  document.querySelectorAll('#paymentOptions .radio-opt').forEach(e=>e.classList.remove('selected'));
+  document.getElementById('pay-'+type)?.classList.add('selected');
+}
+function selectTarget(mode){
+  targetMode = mode;
+  document.getElementById('opt-self').classList.toggle('selected', mode==='self');
+  document.getElementById('opt-friend').classList.toggle('selected', mode==='friend');
+  document.getElementById('friendInput').style.display = mode==='friend' ? '' : 'none';
+}
+function toggleAnon(){
+  anonOn = !anonOn;
+  document.getElementById('anonToggle').classList.toggle('on', anonOn);
+}
+
+async function applyPromo(){
+  const code = document.getElementById('promoInput').value.trim().toUpperCase();
+  if(!code) return;
+  // Simple frontend validation — real check on backend
+  document.getElementById('promoMsg').innerHTML = `<span class="badge badge-blue">🎟 ${code} qo'llanadi</span>`;
+  showToast('🎟 Promo kod buyurtmada tekshiriladi');
+}
+
+async function confirmPurchase(){
+  if(!selectedGift) return;
+  const btn = document.getElementById('buyBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span style="display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite"></span>';
+
+  const friendVal = document.getElementById('friendUsername').value.trim();
+  let target_id = null, target_uname = null;
+  if(targetMode==='friend'){
+    if(!friendVal){btn.disabled=false;btn.textContent='✅ Tasdiqlash';showToast('❌ Do\'st username ni kiriting');return;}
+    if(friendVal.startsWith('@')) target_uname=friendVal.slice(1);
+    else if(/^\d+$/.test(friendVal)) target_id=parseInt(friendVal);
+    else target_uname=friendVal;
+  }
+
+  const body={
+    gift_id: selectedGift.id,
+    pay_with: payWith,
+    anonymous: anonOn,
+    comment: document.getElementById('commentInput').value.trim()||null,
+    promo_code: document.getElementById('promoInput').value.trim().toUpperCase()||null,
+    target_telegram_id: target_id,
+    target_username: target_uname,
+  };
+
+  try {
+    const r = await fetch(API+'/api/orders',{method:'POST',headers:{...H(),'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d = await r.json();
+    if(d.ok){
+      await loadMe();
+      document.getElementById('successMsg').textContent = `🎁 ${selectedGift.name} muvaffaqiyatli yuborildi!`;
+      showPage('success');
+    } else {
+      showToast('❌ '+(d.detail||'Xato yuz berdi'));
+    }
+  } catch(e){
+    showToast('❌ Tarmoq xatosi');
+  }
+  btn.disabled=false;
+  btn.textContent='✅ Tasdiqlash';
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+loadMe();
+loadGifts();
+</script>
+</body>
+</html>

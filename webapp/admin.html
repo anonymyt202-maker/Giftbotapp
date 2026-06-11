@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GiftBot Admin</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg:#0f1117;--bg2:#1a1d27;--bg3:#22263a;--accent:#6c63ff;--accent2:#a78bfa;--green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--text:#e2e8f0;--text2:#94a3b8;--border:#2d3148;--radius:12px;--shadow:0 4px 24px rgba(0,0,0,.4)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+.header{background:var(--bg2);padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.header h1{font-size:18px;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.tabs{display:flex;gap:4px;padding:12px 16px;background:var(--bg2);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:8px 14px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap;color:var(--text2);transition:all .2s;border:none;background:none}
+.tab.active{background:var(--accent);color:#fff}
+.tab:hover:not(.active){background:var(--bg3);color:var(--text)}
+.page{display:none;padding:16px;max-width:900px;margin:0 auto}
+.page.active{display:block}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.card-title{font-size:13px;color:var(--text2);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:600px){.stat-grid{grid-template-columns:repeat(4,1fr)}}
+.stat{background:var(--bg3);border-radius:var(--radius);padding:14px;text-align:center}
+.stat-val{font-size:22px;font-weight:700;color:var(--accent2)}
+.stat-label{font-size:11px;color:var(--text2);margin-top:4px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#5b52e8}
+.btn-danger{background:var(--red);color:#fff}
+.btn-success{background:var(--green);color:#fff}
+.btn-ghost{background:var(--bg3);color:var(--text);border:1px solid var(--border)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:13px;outline:none;transition:border-color .2s}
+.input:focus{border-color:var(--accent)}
+.input::placeholder{color:var(--text2)}
+.label{font-size:12px;color:var(--text2);margin-bottom:6px;display:block;font-weight:500}
+.form-group{margin-bottom:14px}
+.badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-green{background:rgba(34,197,94,.15);color:var(--green)}
+.badge-red{background:rgba(239,68,68,.15);color:var(--red)}
+.badge-yellow{background:rgba(245,158,11,.15);color:var(--yellow)}
+.badge-blue{background:rgba(108,99,255,.15);color:var(--accent2)}
+.table-wrap{overflow-x:auto;border-radius:var(--radius)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--bg3);padding:10px 12px;text-align:left;color:var(--text2);font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+td{padding:10px 12px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(108,99,255,.05)}
+.row-actions{display:flex;gap:6px}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:16px}
+.flex{display:flex;gap:8px}
+.flex-between{display:flex;justify-content:space-between;align-items:center}
+.search-bar{display:flex;gap:8px;margin-bottom:12px}
+.empty{text-align:center;padding:40px;color:var(--text2)}
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--border);padding:10px 20px;border-radius:8px;font-size:13px;z-index:300;animation:fadeIn .2s}
+@keyframes fadeIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;background:var(--bg3);color:var(--text2);margin:2px}
+.separator{height:1px;background:var(--border);margin:14px 0}
+select.input option{background:var(--bg2)}
+</style>
+</head>
+<body>
+<div class="header">
+  <span style="font-size:22px">🔧</span>
+  <h1>GiftBot Admin</h1>
+  <span id="adminName" style="margin-left:auto;font-size:12px;color:var(--text2)"></span>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showPage('dashboard')">📊 Dashboard</button>
+  <button class="tab" onclick="showPage('gifts')">🎁 Giftlar</button>
+  <button class="tab" onclick="showPage('accounts')">📱 Accountlar</button>
+  <button class="tab" onclick="showPage('orders')">📦 Buyurtmalar</button>
+  <button class="tab" onclick="showPage('promo')">🎟 Promo</button>
+  <button class="tab" onclick="showPage('referrals')">👥 Referal</button>
+  <button class="tab" onclick="showPage('users')">👤 Userlar</button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="page-dashboard" class="page active">
+  <div class="stat-grid" id="statGrid"><div class="empty">Yuklanmoqda...</div></div>
+  <div class="separator"></div>
+  <div class="card">
+    <div class="card-title">⚙️ Sozlamalar</div>
+    <div class="flex-between" style="flex-wrap:wrap;gap:10px">
+      <div>
+        <div class="label">Referal mukofot (Stars)</div>
+        <div class="flex">
+          <input type="number" id="refRewardInput" class="input" style="width:100px" min="1">
+          <button class="btn btn-primary" onclick="saveRefReward()">Saqlash</button>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--text2)" id="configInfo"></div>
+    </div>
+  </div>
+</div>
+
+<!-- GIFTS -->
+<div id="page-gifts" class="page">
+  <div class="flex-between" style="margin-bottom:12px">
+    <input class="input" id="giftSearch" placeholder="🔍 Gift qidirish..." style="max-width:220px" oninput="filterGifts()">
+    <button class="btn btn-primary" onclick="openGiftModal()">+ Gift qo'shish</button>
+  </div>
+  <div id="giftsTable" class="table-wrap"><div class="empty">Yuklanmoqda...</div></div>
+</div>
+
+<!-- ACCOUNTS -->
+<div id="page-accounts" class="page">
+  <div class="flex-between" style="margin-bottom:12px">
+    <span style="color:var(--text2);font-size:13px">Telegram accountlar</span>
+    <div class="flex">
+      <button class="btn btn-ghost" onclick="openLoginModal()">📲 Login</button>
+      <button class="btn btn-primary" onclick="openSessionModal()">📁 Session yuklash</button>
+    </div>
+  </div>
+  <div id="accountsTable"><div class="empty">Yuklanmoqda...</div></div>
+</div>
+
+<!-- ORDERS -->
+<div id="page-orders" class="page">
+  <div class="flex" style="margin-bottom:12px">
+    <button class="btn btn-ghost" onclick="loadOrders()">Barchasi</button>
+    <button class="btn btn-ghost" onclick="loadOrders('pending')">⏳ Pending</button>
+    <button class="btn btn-success" onclick="loadOrders('success')">✅ Success</button>
+    <button class="btn btn-danger" onclick="loadOrders('failed')">❌ Failed</button>
+  </div>
+  <div id="ordersTable" class="table-wrap"><div class="empty">Yuklanmoqda...</div></div>
+</div>
+
+<!-- PROMO -->
+<div id="page-promo" class="page">
+  <div class="card">
+    <div class="card-title">Yangi promo kod</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="form-group"><label class="label">Kod</label><input class="input" id="promoCode" placeholder="SUMMER20"></div>
+      <div class="form-group"><label class="label">Turi</label>
+        <select class="input" id="promoType"><option value="percent">Foiz (%)</option><option value="fixed">Miqdor (Stars)</option></select></div>
+      <div class="form-group"><label class="label">Qiymat</label><input type="number" class="input" id="promoVal" placeholder="20"></div>
+      <div class="form-group"><label class="label">Max foydalanish</label><input type="number" class="input" id="promoMax" value="100"></div>
+      <div class="form-group"><label class="label">Tugash sanasi</label><input type="datetime-local" class="input" id="promoExp"></div>
+    </div>
+    <button class="btn btn-primary" onclick="createPromo()">Yaratish</button>
+  </div>
+  <div id="promoTable" class="table-wrap"><div class="empty">Yuklanmoqda...</div></div>
+</div>
+
+<!-- REFERRALS -->
+<div id="page-referrals" class="page">
+  <div id="refStats" class="stat-grid"></div>
+  <div class="card" style="margin-top:12px">
+    <div class="card-title">Top Taklif Qiluvchilar</div>
+    <div id="topInviters"></div>
+  </div>
+</div>
+
+<!-- USERS -->
+<div id="page-users" class="page">
+  <div class="search-bar">
+    <input class="input" id="userSearch" placeholder="🔍 ID yoki username...">
+    <button class="btn btn-primary" onclick="searchUsers()">Qidirish</button>
+  </div>
+  <div id="usersTable" class="table-wrap"><div class="empty">Qidirish natijasi bu yerda ko'rinadi</div></div>
+</div>
+
+<!-- MODALS -->
+<!-- Gift Modal -->
+<div class="modal-overlay" id="giftModal">
+  <div class="modal">
+    <div class="flex-between"><div class="modal-title" id="giftModalTitle">🎁 Gift qo'shish</div>
+      <button class="btn btn-ghost" style="padding:6px 10px" onclick="closeModal('giftModal')">✕</button></div>
+    <input type="hidden" id="giftEditId">
+    <div class="form-group"><label class="label">Nom (emoji ham yozsa bo'ladi)</label><input class="input" id="giftName" placeholder="Ayiq🧸"></div>
+    <div class="form-group"><label class="label">Stars narxi</label><input type="number" class="input" id="giftPrice" min="1"></div>
+    <div class="form-group"><label class="label">Telegram Gift ID</label><input class="input" id="giftTgId" placeholder="5168043015958052"></div>
+    <div class="form-group"><label class="label">Tavsif (ixtiyoriy)</label><textarea class="input" id="giftDesc" rows="2" placeholder="Gift haqida..."></textarea></div>
+    <div class="form-group"><label class="label">Sticker URL (ixtiyoriy)</label><input class="input" id="giftSticker" placeholder="https://..."></div>
+    <div class="form-group"><label class="label">Rasm URL (ixtiyoriy)</label><input class="input" id="giftImage" placeholder="https://..."></div>
+    <div class="form-group"><label class="label">Kategoriya</label><input class="input" id="giftCategory" placeholder="Umumiy"></div>
+    <div class="form-group"><label class="label">Mavjud soni (-1 = cheksiz)</label><input type="number" class="input" id="giftStock" value="-1"></div>
+    <div class="form-group"><label class="label">Fayl yuklash (ixtiyoriy)</label><input type="file" class="input" id="giftFile" accept="image/*,video/*,.tgs,.webp"></div>
+    <div class="flex" style="justify-content:flex-end;gap:8px;margin-top:8px">
+      <button class="btn btn-ghost" onclick="closeModal('giftModal')">Bekor</button>
+      <button class="btn btn-primary" id="giftSaveBtn" onclick="saveGift()">Saqlash</button>
+    </div>
+  </div>
+</div>
+
+<!-- Login Modal -->
+<div class="modal-overlay" id="loginModal">
+  <div class="modal">
+    <div class="flex-between"><div class="modal-title">📲 Login</div>
+      <button class="btn btn-ghost" style="padding:6px 10px" onclick="closeModal('loginModal')">✕</button></div>
+    <div id="loginStep1">
+      <div class="form-group"><label class="label">Telefon raqam</label><input class="input" id="loginPhone" placeholder="+998901234567"></div>
+      <button class="btn btn-primary" onclick="loginStart()">Kod yuborish</button>
+    </div>
+    <div id="loginStep2" style="display:none">
+      <div class="form-group"><label class="label">Telegram kod</label><input class="input" id="loginCode" placeholder="12345"></div>
+      <button class="btn btn-primary" onclick="loginCode()">Tasdiqlash</button>
+    </div>
+    <div id="loginStep3" style="display:none">
+      <div class="form-group"><label class="label">2FA paroli</label><input type="password" class="input" id="login2fa" placeholder="Parol"></div>
+      <button class="btn btn-primary" onclick="login2fa()">Kirish</button>
+    </div>
+    <div id="loginMsg" style="margin-top:10px;font-size:13px;color:var(--accent2)"></div>
+  </div>
+</div>
+
+<!-- Session Upload Modal -->
+<div class="modal-overlay" id="sessionModal">
+  <div class="modal">
+    <div class="flex-between"><div class="modal-title">📁 Session yuklash</div>
+      <button class="btn btn-ghost" style="padding:6px 10px" onclick="closeModal('sessionModal')">✕</button></div>
+    <div class="form-group"><label class="label">Telefon raqam</label><input class="input" id="sessPhone" placeholder="+998901234567"></div>
+    <div class="form-group"><label class="label">Session fayl yoki StringSession matni</label>
+      <input type="file" class="input" id="sessFile" accept=".session,.txt">
+      <div style="margin:6px 0;color:var(--text2);font-size:12px">— yoki —</div>
+      <textarea class="input" id="sessString" rows="3" placeholder="StringSession matni..."></textarea>
+    </div>
+    <button class="btn btn-primary" onclick="uploadSession()">Yuklash</button>
+    <div id="sessMsg" style="margin-top:10px;font-size:13px;color:var(--accent2)"></div>
+  </div>
+</div>
+
+<!-- Balance Modal -->
+<div class="modal-overlay" id="balanceModal">
+  <div class="modal">
+    <div class="flex-between"><div class="modal-title">💰 Balans</div>
+      <button class="btn btn-ghost" style="padding:6px 10px" onclick="closeModal('balanceModal')">✕</button></div>
+    <input type="hidden" id="balTgId">
+    <div class="form-group"><label class="label">Stars qo'shish (+/-)</label><input type="number" class="input" id="balStars" placeholder="50"></div>
+    <div class="form-group"><label class="label">UZS qo'shish (+/-)</label><input type="number" class="input" id="balUzs" placeholder="50000"></div>
+    <button class="btn btn-primary" onclick="updateBalance()">Saqlash</button>
+  </div>
+</div>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
+
+const INIT_DATA = tg.initData;
+const API = '';   // same origin
+
+let allGifts = [];
+let loginPhone = '';
+
+// ── Auth header ──────────────────────────────────────────────────
+const H = () => ({ 'X-Init-Data': INIT_DATA });
+
+// ── Util ─────────────────────────────────────────────────────────
+function showToast(msg, dur=2500){
+  const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
+  document.body.appendChild(t); setTimeout(()=>t.remove(),dur);
+}
+function fmt(n){return Number(n||0).toLocaleString('uz-UZ')}
+function badge(status){
+  const map={pending:'badge-yellow',success:'badge-green',failed:'badge-red',true:'badge-green',false:'badge-red'};
+  const label={pending:'⏳ Pending',success:'✅ Success',failed:'❌ Failed',true:'Faol',false:'O\'chiq'};
+  return `<span class="badge ${map[status]||'badge-blue'}">${label[status]??status}</span>`;
+}
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+
+// ── Pages ─────────────────────────────────────────────────────────
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  event.target.classList.add('active');
+  const loaders={dashboard:loadDashboard,gifts:loadGifts,accounts:loadAccounts,orders:loadOrders,promo:loadPromo,referrals:loadReferrals,users:()=>{}};
+  if(loaders[name]) loaders[name]();
+}
+
+// ── Dashboard ────────────────────────────────────────────────────
+async function loadDashboard(){
+  const r = await fetch(API+'/api/admin/dashboard',{headers:H()});
+  const d = await r.json();
+  if(!d||d.detail) return;
+  document.getElementById('statGrid').innerHTML=`
+    <div class="stat"><div class="stat-val">${fmt(d.total_users)}</div><div class="stat-label">👤 Userlar</div></div>
+    <div class="stat"><div class="stat-val">${fmt(d.total_gifts)}</div><div class="stat-label">🎁 Giftlar</div></div>
+    <div class="stat"><div class="stat-val">${fmt(d.success_orders)}</div><div class="stat-label">✅ Muvaffaqiyatli</div></div>
+    <div class="stat"><div class="stat-val">${fmt(d.revenue_stars)}</div><div class="stat-label">⭐ Daromad</div></div>
+    <div class="stat"><div class="stat-val">${fmt(d.total_orders)}</div><div class="stat-label">📦 Jami buyurtma</div></div>
+    <div class="stat"><div class="stat-val">${fmt(d.pending_orders)}</div><div class="stat-label">⏳ Pending</div></div>
+    <div class="stat"><div class="stat-val">${fmt(d.active_accounts)}</div><div class="stat-label">📱 Faol account</div></div>
+    <div class="stat"><div class="stat-val">${fmt(d.total_stars_in_wallets)}</div><div class="stat-label">⭐ Walletlarda</div></div>
+  `;
+  document.getElementById('refRewardInput').value = d.referral_reward||2;
+  document.getElementById('configInfo').innerHTML = `1 ⭐ = ${d.stars_to_uzs} UZS`;
+}
+
+async function saveRefReward(){
+  const val = parseInt(document.getElementById('refRewardInput').value);
+  const r = await fetch(API+'/api/admin/config/referral',{method:'POST',headers:{...H(),'Content-Type':'application/json'},body:JSON.stringify({reward:val})});
+  const d = await r.json();
+  showToast(d.ok ? `✅ Referral: ${val} ⭐` : '❌ Xato');
+}
+
+// ── Gifts ─────────────────────────────────────────────────────────
+async function loadGifts(){
+  const r = await fetch(API+'/api/gifts/admin/all',{headers:H()});
+  allGifts = await r.json();
+  renderGifts(allGifts);
+}
+function filterGifts(){
+  const q = document.getElementById('giftSearch').value.toLowerCase();
+  renderGifts(allGifts.filter(g=>g.name.toLowerCase().includes(q)));
+}
+function renderGifts(gifts){
+  if(!gifts.length){document.getElementById('giftsTable').innerHTML='<div class="empty">Gift topilmadi</div>';return;}
+  document.getElementById('giftsTable').innerHTML=`<table>
+    <thead><tr><th>Nom</th><th>Narx</th><th>TG ID</th><th>Kategoriya</th><th>Stok</th><th>Holat</th><th>Amal</th></tr></thead>
+    <tbody>${gifts.map(g=>`<tr>
+      <td><b>${g.name}</b></td>
+      <td>⭐${g.price_stars}</td>
+      <td><span class="tag">${g.tg_gift_id}</span></td>
+      <td>${g.category}</td>
+      <td>${g.stock===-1?'∞':g.stock}</td>
+      <td>${badge(g.is_active?'true':'false')}</td>
+      <td><div class="row-actions">
+        <button class="btn btn-ghost" style="padding:5px 10px" onclick="openGiftModal(${g.id})">✏️</button>
+        <button class="btn btn-danger" style="padding:5px 10px" onclick="deleteGift(${g.id})">🗑</button>
+      </div></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+function openGiftModal(id){
+  document.getElementById('giftEditId').value = id||'';
+  document.getElementById('giftModalTitle').textContent = id ? '✏️ Gift tahrirlash' : '🎁 Gift qo\'shish';
+  if(id){
+    const g = allGifts.find(x=>x.id===id);
+    if(g){
+      document.getElementById('giftName').value=g.name;
+      document.getElementById('giftPrice').value=g.price_stars;
+      document.getElementById('giftTgId').value=g.tg_gift_id;
+      document.getElementById('giftDesc').value=g.description||'';
+      document.getElementById('giftSticker').value=g.sticker_url||'';
+      document.getElementById('giftImage').value=g.image_url||'';
+      document.getElementById('giftCategory').value=g.category||'Umumiy';
+      document.getElementById('giftStock').value=g.stock;
+    }
+  } else {
+    ['giftName','giftPrice','giftTgId','giftDesc','giftSticker','giftImage'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('giftCategory').value='Umumiy';
+    document.getElementById('giftStock').value='-1';
+  }
+  openModal('giftModal');
+}
+async function saveGift(){
+  const id = document.getElementById('giftEditId').value;
+  const fd = new FormData();
+  fd.append('name', document.getElementById('giftName').value);
+  fd.append('price_stars', document.getElementById('giftPrice').value);
+  fd.append('tg_gift_id', document.getElementById('giftTgId').value);
+  fd.append('description', document.getElementById('giftDesc').value);
+  fd.append('sticker_url', document.getElementById('giftSticker').value);
+  fd.append('image_url', document.getElementById('giftImage').value);
+  fd.append('category', document.getElementById('giftCategory').value||'Umumiy');
+  fd.append('stock', document.getElementById('giftStock').value);
+  const file = document.getElementById('giftFile').files[0];
+  if(file) fd.append('file',file);
+  const url = id ? `/api/gifts/admin/${id}` : '/api/gifts/admin';
+  const method = id ? 'PUT' : 'POST';
+  const r = await fetch(API+url,{method,headers:H(),body:fd});
+  const d = await r.json();
+  if(d.id){closeModal('giftModal');loadGifts();showToast('✅ Saqlandi!');}
+  else showToast('❌ '+(d.detail||'Xato'));
+}
+async function deleteGift(id){
+  if(!confirm('O\'chirishni tasdiqlaysizmi?')) return;
+  const r = await fetch(API+`/api/gifts/admin/${id}`,{method:'DELETE',headers:H()});
+  const d = await r.json();
+  if(d.ok){loadGifts();showToast('✅ O\'chirildi!');}
+  else showToast('❌ Xato');
+}
+
+// ── Accounts ─────────────────────────────────────────────────────
+async function loadAccounts(){
+  const r = await fetch(API+'/api/accounts',{headers:H()});
+  const accs = await r.json();
+  if(!accs.length){document.getElementById('accountsTable').innerHTML='<div class="empty">Account topilmadi</div>';return;}
+  document.getElementById('accountsTable').innerHTML=`<table>
+    <thead><tr><th>Telefon</th><th>Username</th><th>Yuborildi</th><th>Holat</th><th>Amal</th></tr></thead>
+    <tbody>${accs.map(a=>`<tr>
+      <td>${a.phone}</td>
+      <td>${a.username?'@'+a.username:'—'}</td>
+      <td>🎁 ${a.gifts_sent}</td>
+      <td>${badge(a.is_active?'true':'false')}</td>
+      <td><div class="row-actions">
+        <button class="btn btn-ghost" style="padding:5px 10px" onclick="toggleAccount(${a.id})">${a.is_active?'⏸':'▶'}</button>
+        <button class="btn btn-danger" style="padding:5px 10px" onclick="deleteAccount(${a.id})">🗑</button>
+      </div></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+function openLoginModal(){
+  document.getElementById('loginStep1').style.display='';
+  document.getElementById('loginStep2').style.display='none';
+  document.getElementById('loginStep3').style.display='none';
+  document.getElementById('loginMsg').textContent='';
+  openModal('loginModal');
+}
+async function loginStart(){
+  const phone=document.getElementById('loginPhone').value.trim();
+  if(!phone) return;
+  loginPhone=phone;
+  const fd=new FormData(); fd.append('phone',phone);
+  const r=await fetch(API+'/api/accounts/login/start',{method:'POST',headers:H(),body:fd});
+  const d=await r.json();
+  if(d.ok){
+    document.getElementById('loginStep1').style.display='none';
+    document.getElementById('loginStep2').style.display='';
+    document.getElementById('loginMsg').textContent='📲 Kod yuborildi!';
+  } else document.getElementById('loginMsg').textContent='❌ '+d.error;
+}
+async function loginCode(){
+  const code=document.getElementById('loginCode').value.trim();
+  const fd=new FormData(); fd.append('phone',loginPhone); fd.append('code',code);
+  const r=await fetch(API+'/api/accounts/login/code',{method:'POST',headers:H(),body:fd});
+  const d=await r.json();
+  if(d.ok){closeModal('loginModal');loadAccounts();showToast('✅ Ulandi: @'+(d.username||''));}
+  else if(d.need_2fa){document.getElementById('loginStep2').style.display='none';document.getElementById('loginStep3').style.display='';}
+  else document.getElementById('loginMsg').textContent='❌ '+d.error;
+}
+async function login2fa(){
+  const pw=document.getElementById('login2fa').value;
+  const fd=new FormData(); fd.append('phone',loginPhone); fd.append('password',pw);
+  const r=await fetch(API+'/api/accounts/login/2fa',{method:'POST',headers:H(),body:fd});
+  const d=await r.json();
+  if(d.ok){closeModal('loginModal');loadAccounts();showToast('✅ Ulandi: @'+(d.username||''));}
+  else document.getElementById('loginMsg').textContent='❌ '+d.error;
+}
+function openSessionModal(){
+  document.getElementById('sessMsg').textContent='';
+  openModal('sessionModal');
+}
+async function uploadSession(){
+  const phone=document.getElementById('sessPhone').value.trim();
+  const file=document.getElementById('sessFile').files[0];
+  const strSess=document.getElementById('sessString').value.trim();
+  if(!phone){showToast('❌ Telefon kiriting');return;}
+  let blob;
+  if(file) blob=file;
+  else if(strSess) blob=new Blob([strSess],{type:'text/plain'});
+  else{showToast('❌ Session fayl yoki matn kiriting');return;}
+  const fd=new FormData();
+  fd.append('phone',phone);
+  fd.append('session_file',blob,'session.txt');
+  const r=await fetch(API+'/api/accounts/upload-session',{method:'POST',headers:H(),body:fd});
+  const d=await r.json();
+  if(d.ok){closeModal('sessionModal');loadAccounts();showToast('✅ Session yuklandi: @'+(d.username||''));}
+  else document.getElementById('sessMsg').textContent='❌ '+(d.detail||d.error);
+}
+async function toggleAccount(id){
+  const r=await fetch(API+`/api/accounts/${id}/toggle`,{method:'PATCH',headers:H()});
+  const d=await r.json();
+  if(d.ok){loadAccounts();showToast(d.is_active?'✅ Yoqildi':'⏸ O\'chirildi');}
+}
+async function deleteAccount(id){
+  if(!confirm('Accountni o\'chirishni tasdiqlaysizmi?'))return;
+  const r=await fetch(API+`/api/accounts/${id}`,{method:'DELETE',headers:H()});
+  const d=await r.json();
+  if(d.ok){loadAccounts();showToast('✅ O\'chirildi');}
+}
+
+// ── Orders ────────────────────────────────────────────────────────
+async function loadOrders(status=''){
+  const url=status?`/api/orders/admin/all?status=${status}`:'/api/orders/admin/all';
+  const r=await fetch(API+url,{headers:H()});
+  const orders=await r.json();
+  if(!orders.length){document.getElementById('ordersTable').innerHTML='<div class="empty">Buyurtma topilmadi</div>';return;}
+  document.getElementById('ordersTable').innerHTML=`<table>
+    <thead><tr><th>ID</th><th>User</th><th>Gift</th><th>Target</th><th>Stars</th><th>Holat</th><th>Vaqt</th></tr></thead>
+    <tbody>${orders.map(o=>`<tr>
+      <td>#${o.id}</td>
+      <td>${o.user||'—'}</td>
+      <td>${o.gift||'—'}</td>
+      <td>${o.target||'—'}</td>
+      <td>⭐${o.amount_stars}</td>
+      <td>${badge(o.status)}</td>
+      <td style="font-size:11px;color:var(--text2)">${o.created_at?.slice(0,16)||'—'}</td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+// ── Promo ─────────────────────────────────────────────────────────
+async function loadPromo(){
+  const r=await fetch(API+'/api/admin/promo',{headers:H()});
+  const promos=await r.json();
+  if(!promos.length){document.getElementById('promoTable').innerHTML='<div class="empty">Promo kod yo\'q</div>';return;}
+  document.getElementById('promoTable').innerHTML=`<table>
+    <thead><tr><th>Kod</th><th>Chegirma</th><th>Ishlatildi</th><th>Holat</th><th>Tugash</th><th>Amal</th></tr></thead>
+    <tbody>${promos.map(p=>`<tr>
+      <td><b>${p.code}</b></td>
+      <td>${p.discount_value}${p.discount_type==='percent'?'%':' ⭐'}</td>
+      <td>${p.used_count}/${p.max_uses}</td>
+      <td>${badge(p.is_active?'true':'false')}</td>
+      <td style="font-size:11px">${p.expires_at?.slice(0,10)||'Cheksiz'}</td>
+      <td><button class="btn btn-danger" style="padding:5px 10px" onclick="deletePromo(${p.id})">🗑</button></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+async function createPromo(){
+  const body={
+    code:document.getElementById('promoCode').value.trim(),
+    discount_type:document.getElementById('promoType').value,
+    discount_value:parseFloat(document.getElementById('promoVal').value),
+    max_uses:parseInt(document.getElementById('promoMax').value),
+    expires_at:document.getElementById('promoExp').value||null,
+  };
+  const r=await fetch(API+'/api/admin/promo',{method:'POST',headers:{...H(),'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json();
+  if(d.id){loadPromo();showToast('✅ Promo kod yaratildi: '+d.code);}
+  else showToast('❌ '+(d.detail||'Xato'));
+}
+async function deletePromo(id){
+  if(!confirm('O\'chirishni tasdiqlaysizmi?'))return;
+  await fetch(API+`/api/admin/promo/${id}`,{method:'DELETE',headers:H()});
+  loadPromo(); showToast('✅ O\'chirildi');
+}
+
+// ── Referrals ─────────────────────────────────────────────────────
+async function loadReferrals(){
+  const r=await fetch(API+'/api/admin/referrals',{headers:H()});
+  const d=await r.json();
+  document.getElementById('refStats').innerHTML=`
+    <div class="stat"><div class="stat-val">${fmt(d.total_referrals)}</div><div class="stat-label">Jami referal</div></div>
+    <div class="stat"><div class="stat-val">${fmt(d.rewarded)}</div><div class="stat-label">Mukofotlangan</div></div>
+    <div class="stat"><div class="stat-val">${fmt(d.total_bonus_stars)}</div><div class="stat-label">⭐ Jami bonus</div></div>
+  `;
+  document.getElementById('topInviters').innerHTML = d.top_inviters.map(u=>`
+    <div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--border)">
+      <span>${u.username?'@'+u.username:u.telegram_id}</span>
+      <span style="color:var(--accent2)">👥 ${u.count}</span>
+    </div>`).join('')||'<div class="empty">Ma\'lumot yo\'q</div>';
+}
+
+// ── Users ─────────────────────────────────────────────────────────
+async function searchUsers(){
+  const q=document.getElementById('userSearch').value.trim();
+  const url=q?`/api/users/admin/all?search=${encodeURIComponent(q)}`:'/api/users/admin/all';
+  const r=await fetch(API+url,{headers:H()});
+  const users=await r.json();
+  if(!users.length){document.getElementById('usersTable').innerHTML='<div class="empty">Topilmadi</div>';return;}
+  document.getElementById('usersTable').innerHTML=`<table>
+    <thead><tr><th>ID</th><th>Username</th><th>Stars</th><th>UZS</th><th>Xaridlar</th><th>Amal</th></tr></thead>
+    <tbody>${users.map(u=>`<tr>
+      <td><code>${u.telegram_id}</code></td>
+      <td>${u.username?'@'+u.username:u.first_name||'—'}</td>
+      <td>⭐${fmt(u.stars)}</td>
+      <td>${fmt(u.uzs)} UZS</td>
+      <td>🛍${u.purchases_count}</td>
+      <td><button class="btn btn-ghost" style="padding:5px 10px" onclick="openBalanceModal(${u.telegram_id})">💰</button></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+function openBalanceModal(tgId){
+  document.getElementById('balTgId').value=tgId;
+  document.getElementById('balStars').value='';
+  document.getElementById('balUzs').value='';
+  openModal('balanceModal');
+}
+async function updateBalance(){
+  const tgId=parseInt(document.getElementById('balTgId').value);
+  const stars=parseFloat(document.getElementById('balStars').value)||null;
+  const uzs=parseFloat(document.getElementById('balUzs').value)||null;
+  const r=await fetch(API+'/api/users/admin/balance',{method:'POST',headers:{...H(),'Content-Type':'application/json'},body:JSON.stringify({telegram_id:tgId,stars,uzs})});
+  const d=await r.json();
+  if(d.ok){closeModal('balanceModal');searchUsers();showToast('✅ Saqlandi!');}
+  else showToast('❌ '+(d.detail||'Xato'));
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+const user = tg.initDataUnsafe?.user;
+if(user) document.getElementById('adminName').textContent = (user.first_name||'')+(user.username?' @'+user.username:'');
+tg.BackButton.hide();
+loadDashboard();
+</script>
+</body>
+</html>
